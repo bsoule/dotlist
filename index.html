@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dot List — a Final Version todo demo</title>
+  <meta name="description" content="An interactive demo of Mark Forster's Final Version (FV) todo list system. No signup. Try it, fork it, hack it.">
+
+  <style>
+    /* ---------- Reset-ish + base typography ---------- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1d1d1f;
+      background: #fafaf7;
+      padding: 1rem;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    /* ---------- Header ---------- */
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    h1 .dot { color: #d4691e; }
+    .header-actions { display: flex; gap: 0.5rem; }
+    .header-actions button {
+      font-size: 0.85rem;
+      padding: 0.3rem 0.6rem;
+      background: transparent;
+      border: 1px solid #ccc;
+      color: #555;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .header-actions button:hover { background: #f0f0e8; }
+    .header-actions button[aria-expanded="true"] {
+      background: #1d1d1f;
+      color: white;
+      border-color: #1d1d1f;
+    }
+    .header-actions button[aria-expanded="true"]:hover { background: #3a3a3c; }
+
+    /* ---------- Help panel (collapsible) ---------- */
+    #help-panel {
+      display: none;
+      background: #fff8e7;
+      border: 1px solid #e8d9a8;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      font-size: 0.92rem;
+    }
+    #help-panel.open { display: block; }
+    #help-panel p { margin: 0.4rem 0; }
+    #help-panel ol { margin: 0.4rem 0; padding-left: 1.2rem; }
+
+    /* ---------- Add-task input ---------- */
+    .add-row {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+      align-items: center;
+    }
+    .add-row input[type=text] {
+      flex: 1;
+      padding: 0.55rem 0.7rem;
+      font-size: 1rem;
+      border: 1px solid #d0cfc7;
+      border-radius: 6px;
+      background: white;
+    }
+    .add-row input[type=text]:focus {
+      outline: 2px solid #d4691e;
+      outline-offset: -1px;
+    }
+    .add-row label {
+      font-size: 0.85rem;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      user-select: none;
+      cursor: pointer;
+    }
+    .add-row button {
+      padding: 0.55rem 0.9rem;
+      font-size: 1rem;
+      background: #1d1d1f;
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .add-row button:hover { background: #3a3a3c; }
+
+    /* ---------- Active prompt panel ---------- */
+    #prompt {
+      background: white;
+      border: 1px solid #e2e0d8;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      min-height: 4rem;
+    }
+    #prompt.idle, #prompt.empty { text-align: center; }
+    #prompt .compare {
+      font-size: 1rem;
+      margin: 0 0 0.75rem 0;
+      line-height: 1.5;
+    }
+    #prompt .candidate, #prompt .benchmark {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      background: #f0ede0;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    #prompt .candidate { background: #fde4cd; }
+    #prompt .buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    #prompt button {
+      padding: 0.55rem 1rem;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      border: 1px solid #d0cfc7;
+      background: white;
+      cursor: pointer;
+    }
+    #prompt button.primary {
+      background: #d4691e;
+      color: white;
+      border-color: #d4691e;
+    }
+    #prompt button.primary:hover { background: #b35716; }
+    #prompt button:not(.primary):hover { background: #f0ede0; }
+
+    /* ---------- Task list ---------- */
+    ul.tasks {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    ul.tasks li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid #ece9de;
+      font-size: 1rem;
+    }
+    ul.tasks li.dotted { font-weight: 500; }
+    ul.tasks li.benchmark { background: #fff8e7; }
+    ul.tasks li.candidate { background: #fde4cd; }
+    ul.tasks li.next-up { box-shadow: inset 3px 0 0 #d4691e; }
+    ul.tasks li.done { color: #999; }
+    ul.tasks li.done .task-text {
+      text-decoration: line-through;
+      font-style: italic;
+    }
+    .dot-marker {
+      width: 1em;
+      display: inline-block;
+      text-align: center;
+      color: #d4691e;
+      font-size: 0.9em;
+    }
+    .task-text { flex: 1; }
+    .task-meta { font-size: 0.75rem; color: #888; }
+    .task-delete {
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      color: #bbb;
+      font-size: 1rem;
+      padding: 0 0.2rem;
+      visibility: hidden;
+    }
+    ul.tasks li:hover .task-delete { visibility: visible; }
+    ul.tasks li.done .task-delete { visibility: visible; }
+    .task-delete:hover { color: #c33; }
+
+    /* ---------- Footer ---------- */
+    footer {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    footer a, footer button.linklike {
+      color: #888;
+      background: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      text-decoration: underline;
+      font: inherit;
+    }
+    footer a:hover, footer button.linklike:hover { color: #d4691e; }
+
+    /* ---------- Tiny screens ---------- */
+    @media (max-width: 420px) {
+      body { padding: 0.75rem; }
+      h1 { font-size: 1.2rem; }
+      .add-row label { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1><span class="dot">●</span> Dot List</h1>
+    <div class="header-actions">
+      <button id="help-btn" aria-controls="help-panel" aria-expanded="false">What's this?</button>
+      <button id="reset-btn" title="Wipe and reload the demo list">Reset</button>
+    </div>
+  </header>
+
+  <div id="help-panel">
+    <p><strong>Dot List</strong> is a tiny demo of Mark Forster's <em>Final Version</em> todo system.</p>
+    <ol>
+      <li>Add tasks to the bottom of the list as you think of them.</li>
+      <li>Tap <strong>Start review</strong>. The top task gets a dot — it's your <em>benchmark</em>.</li>
+      <li>For each remaining task, ask yourself: <em>do I want to do this more than the benchmark?</em> If yes, dot it — it becomes the new benchmark. If no, skip.</li>
+      <li>When you reach the bottom, work the dotted tasks <strong>in reverse order</strong>. Mark them done (or "started, not done" to push them to the bottom for next time).</li>
+      <li>Repeat. The system surfaces what's both important <em>and</em> psychologically ready.</li>
+    </ol>
+    <p>This page is a single HTML file — View Source and you've read the whole app. Fork it, save it, hack it.</p>
+  </div>
+
+  <div class="add-row">
+    <input type="text" id="task-input" placeholder="Add a task…" autocomplete="off" />
+    <label><input type="checkbox" id="urgent-check" /> urgent</label>
+    <button id="add-btn">Add</button>
+  </div>
+
+  <div id="prompt"></div>
+
+  <ul class="tasks" id="task-list"></ul>
+
+  <footer>
+    <button class="linklike" id="clear-done-btn">Clear completed</button>
+    <span>based on FV by <a href="https://markforster.squarespace.com/" target="_blank" rel="noopener">Mark Forster</a></span>
+  </footer>
+
+<script>
+'use strict';
+
+/* ============================================================
+ * Dot List — a single-file demo of Mark Forster's Final Version.
+ *
+ * The whole app is in this file. The blog-post-companion goal
+ * is that "View Source" should be a perfectly readable tour.
+ *
+ * Sections, in order:
+ *   1. State + persistence
+ *   2. Algorithm (anchor, chain-build, execution order)
+ *   3. Render
+ *   4. Events
+ * ============================================================ */
+
+/* -----------------------------------------------------------
+ * 1. STATE + PERSISTENCE
+ * -----------------------------------------------------------
+ * One JSON blob in localStorage. Shape:
+ *   {
+ *     tasks: [{ id, text, dotted, dotOrder, doneAt, addedAt }],
+ *     mode:  'empty' | 'idle' | 'reviewing' | 'executing',
+ *     reviewCursor: index|null  // next list-index to compare
+ *   }
+ * --------------------------------------------------------- */
+
+const STORAGE_KEY = 'dotlist-v1';
+
+const DEMO_SEED = [
+  'Write blog post intro',
+  "Reply to Sarah's email",
+  'Buy birthday card',
+  'Read chapter 3 of the book',
+  'Plan weekend trip',
+];
+
+let state;
+
+function freshState(seed = DEMO_SEED) {
+  const tasks = seed.map(text => makeTask(text));
+  const s = {
+    tasks,
+    mode: tasks.length ? 'idle' : 'empty',
+    reviewCursor: null,
+  };
+  // Anchor the top task on first load so the user sees a dot immediately.
+  recomputeAnchor(s);
+  return s;
+}
+
+function makeTask(text, { dotted = false, dotOrder = null } = {}) {
+  return {
+    id: (crypto.randomUUID && crypto.randomUUID()) || String(Math.random()).slice(2),
+    text,
+    dotted,
+    dotOrder,
+    doneAt: null,
+    addedAt: Date.now(),
+  };
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return freshState();
+    const parsed = JSON.parse(raw);
+    // Light sanity check — if shape looks wrong, start fresh.
+    if (!parsed || !Array.isArray(parsed.tasks)) return freshState();
+    return parsed;
+  } catch (e) {
+    return freshState();
+  }
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    // localStorage can fail in private browsing or when full; we just skip.
+  }
+}
+
+
+/* -----------------------------------------------------------
+ * 2. ALGORITHM
+ * -----------------------------------------------------------
+ * Active tasks = tasks where doneAt === null.
+ * Anchor      = topmost active task; it's always dotted with dotOrder 0.
+ * Chain       = active dotted tasks, sorted by dotOrder ascending.
+ *               Execution order = reverse of dotOrder.
+ * --------------------------------------------------------- */
+
+function activeTasks(s = state) {
+  return s.tasks.filter(t => t.doneAt === null);
+}
+
+function chain(s = state) {
+  return activeTasks(s)
+    .filter(t => t.dotted)
+    .sort((a, b) => a.dotOrder - b.dotOrder);
+}
+
+function nextDotOrder(s = state) {
+  const c = chain(s);
+  return c.length ? c[c.length - 1].dotOrder + 1 : 0;
+}
+
+// Ensure the topmost active task is dotted as anchor (dotOrder 0).
+// Called whenever the list shape changes outside of an active review.
+function recomputeAnchor(s = state) {
+  const active = activeTasks(s);
+  if (active.length === 0) return;
+  // If no task has dotOrder 0, promote the topmost active task.
+  const hasAnchor = active.some(t => t.dotted && t.dotOrder === 0);
+  if (!hasAnchor) {
+    active[0].dotted = true;
+    active[0].dotOrder = 0;
+  }
+}
+
+// Given the index in state.tasks of the current benchmark, return the
+// index of the next active, undotted task strictly below it. Returns -1
+// if none remain — that's the end-of-review signal.
+function nextCandidateIndex(fromIndex) {
+  for (let i = fromIndex + 1; i < state.tasks.length; i++) {
+    const t = state.tasks[i];
+    if (t.doneAt === null && !t.dotted) return i;
+  }
+  return -1;
+}
+
+// Find the index in state.tasks of the highest-dotOrder active dotted task.
+// That's the current benchmark during review and the next-up during execution.
+function benchmarkIndex() {
+  let best = -1;
+  let bestOrder = -1;
+  for (let i = 0; i < state.tasks.length; i++) {
+    const t = state.tasks[i];
+    if (t.doneAt === null && t.dotted && t.dotOrder > bestOrder) {
+      bestOrder = t.dotOrder;
+      best = i;
+    }
+  }
+  return best;
+}
+
+
+/* -----------------------------------------------------------
+ * 3. RENDER
+ * -----------------------------------------------------------
+ * One function repaints the world from state. No virtual DOM,
+ * just straightforward DOM manipulation since the list is small.
+ * --------------------------------------------------------- */
+
+const $prompt = document.getElementById('prompt');
+const $list = document.getElementById('task-list');
+
+function render() {
+  renderPrompt();
+  renderList();
+  // Keep mode honest: if there are no active tasks, we're empty.
+  if (activeTasks().length === 0 && state.mode !== 'empty') {
+    state.mode = 'empty';
+    save();
+    renderPrompt();
+  }
+}
+
+function renderPrompt() {
+  $prompt.className = state.mode;
+  $prompt.innerHTML = '';
+
+  if (state.mode === 'empty') {
+    $prompt.innerHTML = `
+      <p class="compare">Your list is empty. Add a task above to get started — or
+      <button class="primary" id="seed-btn">load the demo list</button>.</p>`;
+    document.getElementById('seed-btn').onclick = () => {
+      state = freshState();
+      save();
+      render();
+    };
+    return;
+  }
+
+  if (state.mode === 'idle') {
+    const benchIdx = benchmarkIndex();
+    const benchText = benchIdx >= 0 ? state.tasks[benchIdx].text : '';
+    $prompt.innerHTML = `
+      <p class="compare">Your benchmark is <span class="benchmark"></span>.
+        Walk the list and dot anything you'd rather do first.</p>
+      <div class="buttons">
+        <button class="primary" id="start-review-btn">Start review →</button>
+      </div>`;
+    $prompt.querySelector('.benchmark').textContent = benchText;
+    document.getElementById('start-review-btn').onclick = startReview;
+    return;
+  }
+
+  if (state.mode === 'reviewing') {
+    const benchIdx = benchmarkIndex();
+    const candIdx = state.reviewCursor;
+    if (candIdx === -1 || candIdx == null || candIdx >= state.tasks.length) {
+      // Defensive: shouldn't normally hit this, but if state is odd, end review.
+      finishReview();
+      return;
+    }
+    const benchText = benchIdx >= 0 ? state.tasks[benchIdx].text : '';
+    const candText = state.tasks[candIdx].text;
+    $prompt.innerHTML = `
+      <p class="compare">Do you want to do
+        <span class="candidate"></span>
+        more than
+        <span class="benchmark"></span>?</p>
+      <div class="buttons">
+        <button class="primary" id="yes-btn">Yes, dot it</button>
+        <button id="no-btn">No, skip</button>
+        <button id="end-review-btn" title="End the review and start working the chain">End review</button>
+      </div>`;
+    $prompt.querySelector('.candidate').textContent = candText;
+    $prompt.querySelector('.benchmark').textContent = benchText;
+    document.getElementById('yes-btn').onclick = reviewYes;
+    document.getElementById('no-btn').onclick = reviewNo;
+    document.getElementById('end-review-btn').onclick = finishReview;
+    return;
+  }
+
+  if (state.mode === 'executing') {
+    const idx = benchmarkIndex();
+    if (idx < 0) {
+      // Chain done.
+      state.mode = activeTasks().length ? 'idle' : 'empty';
+      recomputeAnchor();
+      save();
+      renderPrompt();
+      return;
+    }
+    const text = state.tasks[idx].text;
+    $prompt.innerHTML = `
+      <p class="compare">Now doing: <span class="candidate"></span></p>
+      <div class="buttons">
+        <button class="primary" id="done-btn">Done</button>
+        <button id="partial-btn">Started, not done</button>
+      </div>`;
+    $prompt.querySelector('.candidate').textContent = text;
+    document.getElementById('done-btn').onclick = () => completeCurrent({ partial: false });
+    document.getElementById('partial-btn').onclick = () => completeCurrent({ partial: true });
+    return;
+  }
+}
+
+function renderList() {
+  $list.innerHTML = '';
+  const benchIdx = state.mode === 'reviewing' ? benchmarkIndex() : -1;
+  const candIdx = state.mode === 'reviewing' ? state.reviewCursor : -1;
+  const nextUpIdx = state.mode === 'executing' ? benchmarkIndex() : -1;
+
+  state.tasks.forEach((t, i) => {
+    const li = document.createElement('li');
+    const classes = [];
+    if (t.dotted && t.doneAt === null) classes.push('dotted');
+    if (t.doneAt !== null) classes.push('done');
+    if (i === benchIdx) classes.push('benchmark');
+    if (i === candIdx) classes.push('candidate');
+    if (i === nextUpIdx) classes.push('next-up');
+    li.className = classes.join(' ');
+
+    const dot = document.createElement('span');
+    dot.className = 'dot-marker';
+    dot.textContent = (t.dotted && t.doneAt === null) ? '●' : '';
+    li.appendChild(dot);
+
+    const text = document.createElement('span');
+    text.className = 'task-text';
+    text.textContent = t.text;
+    li.appendChild(text);
+
+    const del = document.createElement('button');
+    del.className = 'task-delete';
+    del.textContent = '×';
+    del.title = 'Delete this task';
+    del.onclick = () => deleteTask(t.id);
+    li.appendChild(del);
+
+    $list.appendChild(li);
+  });
+}
+
+
+/* -----------------------------------------------------------
+ * 4. EVENTS
+ * --------------------------------------------------------- */
+
+function addTask(text, { urgent = false } = {}) {
+  text = text.trim();
+  if (!text) return;
+  const task = makeTask(text);
+  if (urgent) {
+    // Urgent items are dotted immediately and slot into the current chain
+    // at the end (so they're the very next thing to do when execution
+    // starts, or if already executing, the very next thing after current).
+    task.dotted = true;
+    task.dotOrder = nextDotOrder();
+  }
+  state.tasks.push(task);
+  // If we were empty, we're now idle (or executing if urgent only).
+  if (state.mode === 'empty') {
+    state.mode = 'idle';
+  }
+  recomputeAnchor();
+  save();
+  render();
+}
+
+function deleteTask(id) {
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  // If we just removed the current review candidate, advance the cursor
+  // sensibly so we don't point past the end.
+  if (state.mode === 'reviewing') {
+    if (state.reviewCursor >= state.tasks.length) {
+      finishReview();
+      return;
+    }
+  }
+  // Reanchor if we deleted the anchor.
+  recomputeAnchor();
+  if (activeTasks().length === 0) state.mode = 'empty';
+  save();
+  render();
+}
+
+function startReview() {
+  // Begin at the first task strictly below the anchor.
+  const anchorIdx = benchmarkIndex();
+  const candIdx = nextCandidateIndex(anchorIdx);
+  if (candIdx === -1) {
+    // Only the anchor exists — straight to execution.
+    state.mode = 'executing';
+  } else {
+    state.mode = 'reviewing';
+    state.reviewCursor = candIdx;
+  }
+  save();
+  render();
+}
+
+function reviewYes() {
+  const i = state.reviewCursor;
+  if (i == null || i < 0 || i >= state.tasks.length) return;
+  const t = state.tasks[i];
+  t.dotted = true;
+  t.dotOrder = nextDotOrder();
+  // Continue scanning from the just-dotted task downward.
+  const next = nextCandidateIndex(i);
+  if (next === -1) {
+    finishReview();
+  } else {
+    state.reviewCursor = next;
+    save();
+    render();
+  }
+}
+
+function reviewNo() {
+  // Skip: advance cursor relative to the current candidate, NOT the benchmark.
+  // (The candidate may be far below the benchmark by now.)
+  const next = nextCandidateIndex(state.reviewCursor);
+  if (next === -1) {
+    finishReview();
+  } else {
+    state.reviewCursor = next;
+    save();
+    render();
+  }
+}
+
+function finishReview() {
+  state.mode = 'executing';
+  state.reviewCursor = null;
+  save();
+  render();
+}
+
+function completeCurrent({ partial }) {
+  const idx = benchmarkIndex();
+  if (idx < 0) return;
+  const t = state.tasks[idx];
+  t.doneAt = Date.now();
+  t.dotted = false;
+  // dotOrder left as historical record but no longer affects logic (filtered by doneAt).
+
+  if (partial) {
+    // Push a fresh, un-dotted copy to the bottom for next round.
+    state.tasks.push(makeTask(t.text));
+  }
+
+  // If chain is now empty, drop back to idle (and reanchor) or empty.
+  const remainingChain = chain();
+  if (remainingChain.length === 0) {
+    if (activeTasks().length === 0) {
+      state.mode = 'empty';
+    } else {
+      state.mode = 'idle';
+      recomputeAnchor();
+    }
+  }
+  save();
+  render();
+}
+
+function clearCompleted() {
+  state.tasks = state.tasks.filter(t => t.doneAt === null);
+  save();
+  render();
+}
+
+function resetAll() {
+  if (!confirm('Wipe your list?')) return;
+  state = freshState([]);  // empty — user can click "load demo list" if they want it back
+  save();
+  render();
+}
+
+
+/* -----------------------------------------------------------
+ * Wire up the static UI controls.
+ * --------------------------------------------------------- */
+
+const $input = document.getElementById('task-input');
+const $urgent = document.getElementById('urgent-check');
+
+document.getElementById('add-btn').onclick = submitAdd;
+$input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitAdd();
+});
+function submitAdd() {
+  addTask($input.value, { urgent: $urgent.checked });
+  $input.value = '';
+  $urgent.checked = false;
+  $input.focus();
+}
+
+document.getElementById('reset-btn').onclick = resetAll;
+document.getElementById('clear-done-btn').onclick = clearCompleted;
+
+const $help = document.getElementById('help-panel');
+const $helpBtn = document.getElementById('help-btn');
+function setHelpOpen(open) {
+  $help.classList.toggle('open', open);
+  $helpBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+$helpBtn.onclick = () => setHelpOpen(!$help.classList.contains('open'));
+
+// ?help (or ?help=1) in the URL opens the intro panel on load — handy for sharing
+// the page with someone who hasn't read the blog post.
+if (new URLSearchParams(location.search).has('help')) setHelpOpen(true);
+
+// Keyboard shortcuts during review/execution. Ignored when typing in the input.
+document.addEventListener('keydown', (e) => {
+  if (document.activeElement === $input) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (state.mode === 'reviewing') {
+    if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); reviewYes(); }
+    else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); reviewNo(); }
+  } else if (state.mode === 'executing') {
+    if (e.key === 'd' || e.key === 'D') { e.preventDefault(); completeCurrent({ partial: false }); }
+    else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); completeCurrent({ partial: true }); }
+  } else if (state.mode === 'idle') {
+    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); startReview(); }
+  }
+});
+
+/* -----------------------------------------------------------
+ * Boot.
+ * --------------------------------------------------------- */
+state = load();
+// Defensive: if persisted state somehow has no anchor and isn't empty, fix it.
+recomputeAnchor();
+render();
+
+</script>
+</body>
+</html>
