@@ -234,21 +234,21 @@
   </header>
 
   <div id="help-panel">
-    <p><strong>Dot List</strong> is a tiny demo of Mark Forster's <em>Final Version</em> todo system.
+    <p><strong>Dot List aka Forster List</strong> is a tiny demo of Mark Forster's <em>Final Version</em> todo system.
     There's a 
-    <a href="https://doc.beeminder.com/fv">thorough explanation</a> 
+    <a href="https://blog.beeminder.com/forster">thorough explanation</a> 
     on the Beeminder blog.
     </p>
-    <p><strong>TLDR;</strong></p>
+    <p><strong>How Do You (To)Do?</strong></p>
     <ol>
-      <li>Add new tasks to the bottom of the list.</li>
-      <li>Tap <strong>Start review</strong>. The top task gets a dot — it's your <em>benchmark</em>.</li>
-      <li>The review will take you through the list, asking: <em>Do you want to do [THIS] more than [benchmark]?</em>. If yes, then it becomes the new benchmark. If not, skip.</li>
-      <li>When you reach the bottom, end the review, and then work the dotted tasks <strong>in reverse order</strong>.</li>
-      <li>Dot List will keep surfacing the next thing to do for you.</li>
-      <li>Note: you do not have to complete the task. At a minimum make a start on it and then push it back onto the bottom of the list for next time by clicking "Started, not done".</li>
+      <li>New tasks are added to the bottom of the list</li>
+      <li>The top task gets a dot</li>
+      <li><strong>Start review</strong> takes you through the list comparing each task to the current dotted task</li>
+      <li>At the end of the review, you'll have a chain of tasks which you work from the bottom up</li>
+      <li>As you mark items off, Dot List will surface the next item in your chain</li>
+      <li>Note: you do not have to complete the entire task! At a minimum make a start on it. You can always click "Started, not done" and push it back onto the bottom of the list for next time.</li>
     </ol>
-    <p>This project lives on <a>Github</a>, but also in its current state this page *is* the app -- View Source and you've seen the whole thing. Anyway, fork it, hack it, build on it. Whatever you like! As is, it will store your list in localstorage until you clear your browser cache, or click the "clear completed" or "reset" buttons.</p>
+    <p>Want more or different features? Make your own version by grabbing the source in your browser; it's plain JavaScript + HTML. Or <a href="https://github.com/bsoule/dotlist">fork it up</a> from GitHub.</p>
   </div>
 
   <div class="add-row">
@@ -263,7 +263,7 @@
 
   <footer>
     <button class="linklike" id="clear-done-btn">Clear completed</button>
-    <span>based on FV by <a href="https://markforster.squarespace.com/" target="_blank" rel="noopener">Mark Forster</a></span>
+    <span>based on Mark Forster's <a href="https://blog.beeminder.com/forster" target="_blank" rel="noopener">Final Version</a></span>
   </footer>
 
 <script>
