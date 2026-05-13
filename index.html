@@ -233,15 +233,21 @@
   </header>
 
   <div id="help-panel">
-    <p><strong>Dot List</strong> is a tiny demo of Mark Forster's <em>Final Version</em> todo system.</p>
+    <p><strong>Dot List</strong> is a tiny demo of Mark Forster's <em>Final Version</em> todo system.
+    There's a 
+    <a href="https://doc.beeminder.com/fv">thorough explanation</a> 
+    on the Beeminder blog.
+    </p>
+    <p><strong>TLDR;</strong></p>
     <ol>
-      <li>Add tasks to the bottom of the list as you think of them.</li>
+      <li>Add new tasks to the bottom of the list.</li>
       <li>Tap <strong>Start review</strong>. The top task gets a dot — it's your <em>benchmark</em>.</li>
-      <li>For each remaining task, ask yourself: <em>do I want to do this more than the benchmark?</em> If yes, dot it — it becomes the new benchmark. If no, skip.</li>
-      <li>When you reach the bottom, work the dotted tasks <strong>in reverse order</strong>. Mark them done (or "started, not done" to push them to the bottom for next time).</li>
-      <li>Repeat. The system surfaces what's both important <em>and</em> psychologically ready.</li>
+      <li>The review will take you through the list, asking: <em>Do you want to do [THIS] more than [benchmark]?</em>. If yes, then it becomes the new benchmark. If not, skip.</li>
+      <li>When you reach the bottom, end the review, and then work the dotted tasks <strong>in reverse order</strong>.</li>
+      <li>Dot List will keep surfacing the next thing to do for you.</li>
+      <li>Note: you do not have to complete the task. At a minimum make a start on it and then push it back onto the bottom of the list for next time by clicking "Started, not done".</li>
     </ol>
-    <p>This page is a single HTML file — View Source and you've read the whole app. Fork it, save it, hack it.</p>
+    <p>This project lives on <a>Github</a>, but also in its current state this page *is* the app -- View Source and you've seen the whole thing. Anyway, fork it, hack it, build on it. Whatever you like! As is, it will store your list in localstorage until you clear your browser cache, or click the "clear completed" or "reset" buttons.</p>
   </div>
 
   <div class="add-row">
@@ -290,10 +296,10 @@ const STORAGE_KEY = 'dotlist-v1';
 
 const DEMO_SEED = [
   'Write blog post intro',
-  "Reply to Sarah's email",
-  'Buy birthday card',
-  'Read chapter 3 of the book',
-  'Plan weekend trip',
+  "Reply to mum",
+  'Order cat food',
+  'Read chapter ג of Unsong',
+  'Laundry',
 ];
 
 let state;
